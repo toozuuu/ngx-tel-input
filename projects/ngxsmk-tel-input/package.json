@@ -1,6 +1,6 @@
 {
   "name": "ngxsmk-tel-input",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Angular international telephone input with country flag dropdown, formatting & validation (intl-tel-input + libphonenumber). ControlValueAccessor. Supports Angular 17–19.",
   "keywords": [
     "angular",

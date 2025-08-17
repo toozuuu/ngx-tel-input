@@ -86,40 +86,54 @@ Restart the dev server after changes.
 
 ```ts
 // app.component.ts
-import { Component } from '@angular/core';
-import { ReactiveFormsModule, FormBuilder, Validators, FormGroup } from '@angular/forms';
-import { CommonModule } from '@angular/common';
-import { NgxsmkTelInputComponent } from '../../../ngxsmk-tel-input/src/lib/ngxsmk-tel-input.component';
+import { Component, inject } from '@angular/core';
+import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { JsonPipe } from '@angular/common';
+import { NgxsmkTelInputComponent, IntlTelI18n, CountryMap } from 'ngxsmk-tel-input';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [ReactiveFormsModule, CommonModule, NgxsmkTelInputComponent],
+  imports: [ReactiveFormsModule, NgxsmkTelInputComponent, JsonPipe],
   template: `
     <form [formGroup]="fg" style="max-width:420px;display:grid;gap:12px">
       <ngxsmk-tel-input
         formControlName="phone"
         label="Phone"
         hint="Include area code"
+        dir="ltr"
         [initialCountry]="'US'"
         [preferredCountries]="['US','GB','AU']"
-        (countryChange)="onCountry($event)">
+        [i18n]="enLabels"
+        [localizedCountries]="enCountries"
+        [autoPlaceholder]="'off'"
+        [clearAriaLabel]="'Clear phone number'">
       </ngxsmk-tel-input>
+
       <pre>Value: {{ fg.value | json }}</pre>
     </form>
   `
 })
 export class AppComponent {
-  fg: FormGroup;
+  private readonly fb = inject(FormBuilder);
+  fg = this.fb.group({ phone: ['', Validators.required] });
 
-  constructor(private readonly fb: FormBuilder) {
-    this.fg = this.fb.group({
-      phone: ['', Validators.required]
-    });
-  }
+  // English UI labels (dropdown/search/ARIA)
+  enLabels: IntlTelI18n = {
+    selectedCountryAriaLabel: 'Selected country',
+    countryListAriaLabel: 'Country list',
+    searchPlaceholder: 'Search country',
+    zeroSearchResults: 'No results',
+    noCountrySelected: 'No country selected'
+  };
 
-  onCountry(e: { iso2: any }) { console.log('Country changed:', e.iso2); }
-
+  // Optional: only override the names you care about
+  enCountries: CountryMap = {
+    US: 'United States',
+    GB: 'United Kingdom',
+    AU: 'Australia',
+    CA: 'Canada'
+  };
 }
 
 ```
@@ -139,33 +153,92 @@ export class AppComponent {
 
 ---
 
+## 🈺 Localization & RTL
+
+You can localize the dropdown/search labels and override country names.
+
+<img src="https://unpkg.com/ngxsmk-tel-input@1.0.4/docs/kr.png" alt="Angular international phone input - Korean Localization & RTL" width="420" />
+
+Korean example
+
+```ts
+
+<ngxsmk-tel-input
+  [initialCountry]="'KR'"
+  [preferredCountries]="['KR','US','JP']"
+  [i18n]="koLabels"
+  [localizedCountries]="koCountries">
+</ngxsmk-tel-input>
+
+// in component
+koLabels = {
+  selectedCountryAriaLabel: '선택한 국가',
+  countryListAriaLabel: '국가 목록',
+  searchPlaceholder: '국가 검색',
+  zeroSearchResults: '결과 없음',
+  noCountrySelected: '선택된 국가 없음'
+};
+
+koCountries = {
+  KR: '대한민국',
+  US: '미국',
+  JP: '일본',
+  CN: '중국'
+};
+
+```
+
+Arabic + RTL example
+
+```ts
+<ngxsmk-tel-input
+  dir="rtl"
+  label="الهاتف"
+  hint="اكتب رمز المنطقة"
+  [initialCountry]="'AE'"
+  [preferredCountries]="['AE','SA','EG']"
+  [i18n]="arLabels"
+  [localizedCountries]="arCountries"
+  [dropdownAttachToBody]="false"  <!-- so popup inherits rtl from host -->
+></ngxsmk-tel-input>
+
+```
+
+
 ## ⚙️ API
 
 ### Inputs
 
-| Name                   | Type                                   | Default                | Description                                                                   |
-| ---------------------- | -------------------------------------- | ---------------------- | ----------------------------------------------------------------------------- |
-| `initialCountry`       | `CountryCode \| 'auto'`                | `'US'`                 | Starting country. `'auto'` uses geoIp stub (`US` by default).                 |
-| `preferredCountries`   | `CountryCode[]`                        | `['US','GB']`          | Pin these at the top.                                                         |
-| `onlyCountries`        | `CountryCode[]`                        | —                      | Limit selectable countries.                                                   |
-| `nationalMode`         | `boolean`                              | `false`                | If `true`, **display** national format in the input. Value still emits E.164. |
-| `separateDialCode`     | `boolean`                              | `false`                | Show dial code outside the input.                                             |
-| `allowDropdown`        | `boolean`                              | `true`                 | Enable/disable dropdown.                                                      |
-| `placeholder`          | `string`                               | `'Enter phone number'` | Input placeholder.                                                            |
-| `autocomplete`         | `string`                               | `'tel'`                | Native autocomplete.                                                          |
-| `disabled`             | `boolean`                              | `false`                | Disable the control.                                                          |
-| `label`                | `string`                               | —                      | Optional floating label text.                                                 |
-| `hint`                 | `string`                               | —                      | Helper text below the control.                                                |
-| `errorText`            | `string`                               | —                      | Custom error text.                                                            |
-| `size`                 | `'sm' \| 'md' \| 'lg'`                 | `'md'`                 | Control height/typography.                                                    |
-| `variant`              | `'outline' \| 'filled' \| 'underline'` | `'outline'`            | Visual variant.                                                               |
-| `showClear`            | `boolean`                              | `true`                 | Show a clear (×) button when not empty.                                       |
-| `autoFocus`            | `boolean`                              | `false`                | Focus on init.                                                                |
-| `selectOnFocus`        | `boolean`                              | `false`                | Select all text on focus.                                                     |
-| `formatOnBlur`         | `boolean`                              | `true`                 | Pretty‑print on blur (national if `nationalMode`).                            |
-| `showErrorWhenTouched` | `boolean`                              | `true`                 | Show error styles only after blur.                                            |
-| `dropdownAttachToBody` | `boolean`                              | `true`                 | Attach dropdown to `<body>` (avoids clipping/overflow).                       |
-| `dropdownZIndex`       | `number`                               | `2000`                 | Z‑index for dropdown panel.                                                   |
+| Name                   | Type                                        | Default                 | Description                                                                   |
+|------------------------|---------------------------------------------|-------------------------|-------------------------------------------------------------------------------|
+| `initialCountry`       | `CountryCode \| 'auto'`                     | `'US'`                  | Starting country. `'auto'` uses geoIp stub (`US` by default).                 |
+| `preferredCountries`   | `CountryCode[]`                             | `['US','GB']`           | Pin these at the top.                                                         |
+| `onlyCountries`        | `CountryCode[]`                             | —                       | Limit selectable countries.                                                   |
+| `nationalMode`         | `boolean`                                   | `false`                 | If `true`, **display** national format in the input. Value still emits E.164. |
+| `separateDialCode`     | `boolean`                                   | `false`                 | Show dial code outside the input.                                             |
+| `allowDropdown`        | `boolean`                                   | `true`                  | Enable/disable dropdown.                                                      |
+| `placeholder`          | `string`                                    | `'Enter phone number'`  | Input placeholder.                                                            |
+| `autocomplete`         | `string`                                    | `'tel'`                 | Native autocomplete.                                                          |
+| `disabled`             | `boolean`                                   | `false`                 | Disable the control.                                                          |
+| `label`                | `string`                                    | —                       | Optional floating label text.                                                 |
+| `hint`                 | `string`                                    | —                       | Helper text below the control.                                                |
+| `errorText`            | `string`                                    | —                       | Custom error text.                                                            |
+| `size`                 | `'sm' \| 'md' \| 'lg'`                      | `'md'`                  | Control height/typography.                                                    |
+| `variant`              | `'outline' \| 'filled' \| 'underline'`      | `'outline'`             | Visual variant.                                                               |
+| `showClear`            | `boolean`                                   | `true`                  | Show a clear (×) button when not empty.                                       |
+| `autoFocus`            | `boolean`                                   | `false`                 | Focus on init.                                                                |
+| `selectOnFocus`        | `boolean`                                   | `false`                 | Select all text on focus.                                                     |
+| `formatOnBlur`         | `boolean`                                   | `true`                  | Pretty‑print on blur (national if `nationalMode`).                            |
+| `showErrorWhenTouched` | `boolean`                                   | `true`                  | Show error styles only after blur.                                            |
+| `dropdownAttachToBody` | `boolean`                                   | `true`                  | Attach dropdown to `<body>` (avoids clipping/overflow).                       |
+| `dropdownZIndex`       | `number`                                    | `2000`                  | Z‑index for dropdown panel.                                                   |
+| `i18n`                 | `IntlTelI18n`                               | —                       | Localize dropdown/search/ARIA labels.                                         |
+| `localizedCountries`   | `Partial<Record<CountryCode, string>>`      | —                       | Override country display names (ISO-2 keys).                                  |
+| `dir`                  | `'ltr' \| 'rtl'`                            | `'ltr'`                 | Text direction for the control.                                               |
+| `autoPlaceholder`      | `'off' \| 'polite' \| 'aggressive'`         | `'polite'`              | Example placeholders. Requires `utilsScript` unless `off`.                    |
+| `utilsScript`          | `string`                                    | —                       | Path/URL to `utils.js` (needed for example placeholders).                     |
+| `customPlaceholder`    | `(example: string, country: any) => string` | —                       | Transform the example placeholder.                                            |
+| `clearAriaLabel`       | `string`                                    | `'Clear phone number'`  | ARIA label for the clear button.                                              |
 
 > `CountryCode` is the ISO‑2 uppercase code from `libphonenumber-js` (e.g. `US`, `GB`).
 
